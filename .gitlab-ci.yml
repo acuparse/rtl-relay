@@ -17,8 +17,8 @@ BUILD::container:
     - mkdir -p $HOME/.docker/cli-plugins/
     - wget -O $HOME/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v$BUILDX_VERSION/buildx-v$BUILDX_VERSION.linux-amd64
     - chmod a+x $HOME/.docker/cli-plugins/docker-buildx
-    - docker run --privileged --rm tonistiigi/binfmt --install $BUILDX_PLATFORM_DEV
-    - docker buildx create --use --driver docker-container --name binfmt --platform=$BUILDX_PLATFORM_DEV
+    - docker run --privileged --rm tonistiigi/binfmt --install $BUILDX_PLATFORM
+    - docker buildx create --use --driver docker-container --name binfmt --platform=$BUILDX_PLATFORM
     - docker login -u $CI_REGISTRY_USER -p ${CI_REGISTRY_PASSWORD} $CI_REGISTRY
     - docker login -u $DOCKERHUB_USER -p $DOCKERHUB_REGISTRY_TOKEN
   script:
@@ -30,10 +30,12 @@ BUILD::container:
         --tag $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA \
         --tag $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:latest \
         --tag $DOCKER_REGISTRY_TAG:latest \
-        --platform $BUILDX_PLATFORM_DEV \
+        --platform $BUILDX_PLATFORM \
         --push \
         .
   dependencies: []
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 ### Includes ###
 include:
@@ -43,3 +45,7 @@ include:
   - template: Security/Dependency-Scanning.gitlab-ci.yml
   - template: Security/License-Scanning.gitlab-ci.yml
   - template: Security/SAST.gitlab-ci.yml
+
+container_scanning:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

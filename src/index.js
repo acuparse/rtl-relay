@@ -26,7 +26,7 @@ const SyslogServer = require("syslog-server");
 const https = require('https');
 const server = new SyslogServer();
 
-const acuparse_server = process.env.ACUPARSE_HOSTNAME || null;
+const acuparse_server = process.env.ACUPARSE_HOSTNAME || 'acuparse';
 const acuparse_port = process.env.ACUPARSE_PORT || 443;
 
 // Extract the JSON from the SYSLOG message
