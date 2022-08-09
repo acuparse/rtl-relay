@@ -19,53 +19,62 @@
 
 /**
  * File: index.js
- * RTL SYSLOG Relay
+ * RTL SYSLOG Relay Server Main Application
  */
+const version = '1.0.0';
+
+const MAC_ADDRESS = process.env.PRIMARY_MAC_ADDRESS;
+
+if (MAC_ADDRESS === undefined) {
+    console.error('PRIMARY_MAC_ADDRESS is not set.');
+    process.exit(1);
+}
 
 const SyslogServer = require("syslog-server");
 const https = require('https');
-const server = new SyslogServer();
 
-const acuparse_server = process.env.ACUPARSE_HOSTNAME || null;
-const acuparse_port = process.env.ACUPARSE_PORT || 443;
+const RTL_SERVER = new SyslogServer();
 
-// Extract the JSON from the SYSLOG message
-server.on("message", (value) => {
-    let json_data = /{.+}/g;
-    let reading;
-    while (reading = json_data.exec(value.message)) {
-        let data = reading[0];
-        console.log(data);
-        if (acuparse_server) {
-            const options = {
-                host: acuparse_server,
-                port: acuparse_port,
-                path: '/weatherstation/updateweatherstation?rtl',
-                method: 'POST',
-                rejectUnauthorized: false,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': data.length
-                }
-            };
+const ACUPARSE_SERVER = process.env.ACUPARSE_HOSTNAME || 'acuparse';
+const ACUPARSE_PORT = process.env.ACUPARSE_PORT || 443;
 
-            const req = https.request(options, (res) => {
-                let data = '';
-                console.log('Status Code:', res.statusCode);
-                res.on('data', (chunk) => {
-                    data += chunk;
-                });
-                res.on('end', () => {
-                    console.log('Body: ', JSON.parse(data));
-                });
-            }).on("error", (err) => {
-                console.log("Error: ", err.message);
+const JSON_REGEX = /{.+}/g;
+
+// Extract the JSON Reading from the incoming SYSLOG message
+RTL_SERVER.on("message", (value) => {
+    let RAW_READING;
+    while (RAW_READING = JSON_REGEX.exec(value.message)) {
+        let ACUPARSE_DATA = RAW_READING[0];
+        const REQUEST_OPTIONS = {
+            host: ACUPARSE_SERVER,
+            port: ACUPARSE_PORT,
+            path: '/weatherstation/updateweatherstation?id=' + MAC_ADDRESS + '&realtime=1&softwaretype=rtl_433',
+            method: 'POST',
+            rejectUnauthorized: false,
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': ACUPARSE_DATA.length,
+                'User-Agent': 'Acuparse RTL Relay/' + version
+            }
+        };
+
+        const req = https.request(REQUEST_OPTIONS, (res) => {
+            let ACUPARSE_RESPONSE = '';
+            res.setEncoding('utf-8');
+            res.on('data', (chunk) => {
+                ACUPARSE_RESPONSE += chunk;
             });
-            req.write(data);
-            req.end();
-        }
+            res.on('end', () => {
+                console.log("READING:", ACUPARSE_DATA);
+                console.log("RESPONSE:", ACUPARSE_RESPONSE);
+            });
+        }).on('error', (err) => {
+            console.log("ERROR: ", err.message);
+        });
+        req.write(ACUPARSE_DATA);
+        req.end();
     }
 });
 
 // Start the server
-server.start().then(r => console.log("Relaying readings to " + acuparse_server + ":" + acuparse_port));
+RTL_SERVER.start().then(r => console.log("Relaying readings to " + ACUPARSE_SERVER + " on port " + ACUPARSE_PORT));

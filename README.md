@@ -1,3 +1,5 @@
-# Acuparse RTl Relay Server
+# Acuparse RTL Relay Server
 
-Provides a lightweight server to relay RTL packets to Acuparse for processing.
+Provides a lightweight SYSLOG server to relay RTL data packets to Acuparse for further processing.
+
+See the [Acuparse RTL Docs](https://docs.acuparse.com/other/RTL) for more information and configuration details.

@@ -26,12 +26,14 @@ FROM node:current
 
 ARG BUILD_DATE
 ARG VCS_REF
+ARG VERSION
 ARG APP_DIR='/opt/acuparse/'
 
 LABEL MAINTAINER="docker@acuparse.com" \
 org.label-schema.schema-version="1.0" \
 org.label-schema.build-date=$BUILD_DATE \
 org.label-schema.name="acuparse/rtl-relay" \
+org.label-schema.version=$VERSION \
 org.label-schema.description="Acuparse RTL Relay Server" \
 org.label-schema.url="https://www.acuarse.com/" \
 org.label-schema.vcs-url="https://gitlab.com/acuparse/rtl-relay" \
