@@ -1,0 +1,19 @@
+#!/bin/bash
+
+echo "Prepare Build Environment"
+
+docker pull tonistiigi/binfmt
+docker run --privileged --rm tonistiigi/binfmt --install linux/amd64,linux/arm/v7,linux/arm64
+docker buildx create --use --driver docker-container --name binfmt --platform=linux/amd64,linux/arm/v7,linux/arm64
+docker buildx inspect --bootstrap
+
+echo "Build Development Relay Server Image"
+
+docker buildx build \
+--tag acuparse/rtl-relay:dev \
+--platform linux/amd64,linux/arm/v7,linux/arm64 \
+--push \
+.
+
+docker buildx rm binfmt
+docker image rm tonistiigi/binfmt

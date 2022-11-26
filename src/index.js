@@ -21,7 +21,8 @@
  * File: index.js
  * RTL SYSLOG Relay Server Main Application
  */
-const version = '1.0.0';
+
+const version = '1.1.0';
 
 const MAC_ADDRESS = process.env.PRIMARY_MAC_ADDRESS;
 
@@ -44,37 +45,47 @@ const JSON_REGEX = /{.+}/g;
 RTL_SERVER.on("message", (value) => {
     let RAW_READING;
     while (RAW_READING = JSON_REGEX.exec(value.message)) {
-        let ACUPARSE_DATA = RAW_READING[0];
-        const REQUEST_OPTIONS = {
-            host: ACUPARSE_SERVER,
-            port: ACUPARSE_PORT,
-            path: '/weatherstation/updateweatherstation?id=' + MAC_ADDRESS + '&realtime=1&softwaretype=rtl_433',
-            method: 'POST',
-            rejectUnauthorized: false,
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': ACUPARSE_DATA.length,
-                'User-Agent': 'Acuparse RTL Relay/' + version
-            }
-        };
 
-        const req = https.request(REQUEST_OPTIONS, (res) => {
-            let ACUPARSE_RESPONSE = '';
-            res.setEncoding('utf-8');
-            res.on('data', (chunk) => {
-                ACUPARSE_RESPONSE += chunk;
+        // Get the JSON Reading, filter it, and send it to the Acuparse Server
+        let ACUPARSE_DATA = RAW_READING[0];
+
+        // Parse JSON to filter out unknown models
+        let ACUPARSE_PARSED = JSON.parse(ACUPARSE_DATA);
+
+        // Check if the model matches "Acurite-Atlas", "Acurite-5n1", or "Acurite-Tower"
+        if (ACUPARSE_PARSED.model === 'Acurite-Atlas' || ACUPARSE_PARSED.model === 'Acurite-5n1' || ACUPARSE_PARSED.model === 'Acurite-Tower') {
+
+            const REQUEST_OPTIONS = {
+                host: ACUPARSE_SERVER,
+                port: ACUPARSE_PORT,
+                path: '/weatherstation/updateweatherstation?id=' + MAC_ADDRESS + '&realtime=1&softwaretype=rtl_433',
+                method: 'POST',
+                rejectUnauthorized: false,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': ACUPARSE_DATA.length,
+                    'User-Agent': 'Acuparse RTL Relay/' + version
+                }
+            };
+
+            const req = https.request(REQUEST_OPTIONS, (res) => {
+                let ACUPARSE_RESPONSE = '';
+                res.setEncoding('utf-8');
+                res.on('data', (chunk) => {
+                    ACUPARSE_RESPONSE += chunk;
+                });
+                res.on('end', () => {
+                    console.log("READING:", ACUPARSE_DATA);
+                    console.log("RESPONSE:", ACUPARSE_RESPONSE);
+                });
+            }).on('error', (err) => {
+                console.log("ERROR: ", err.message);
             });
-            res.on('end', () => {
-                console.log("READING:", ACUPARSE_DATA);
-                console.log("RESPONSE:", ACUPARSE_RESPONSE);
-            });
-        }).on('error', (err) => {
-            console.log("ERROR: ", err.message);
-        });
-        req.write(ACUPARSE_DATA);
-        req.end();
+            req.write(ACUPARSE_DATA);
+            req.end();
+        }
     }
 });
 
 // Start the server
-RTL_SERVER.start().then(r => console.log("Relaying readings to " + ACUPARSE_SERVER + " on port " + ACUPARSE_PORT));
+RTL_SERVER.start({port: 10514}).then(r => console.log("Relaying readings to " + ACUPARSE_SERVER + " on port " + ACUPARSE_PORT));
