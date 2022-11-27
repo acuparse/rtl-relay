@@ -4,7 +4,7 @@ Provides a lightweight Syslog server for relaying [rtl_433](https://github.com/m
 
 The relay server listens on port `10514` for syslog messages.
 
-See the [Acuparse RTL Docs](https://docs.acuparse.com/other/RTL) for more information and configuration details.
+See the [Acuparse RTL Docs](https://docs.acuparse.com/REALTIME/) for more information and configuration details.
 
 ## Standalone Container
 
