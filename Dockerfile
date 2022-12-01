@@ -49,3 +49,4 @@ ENTRYPOINT ["npm"]
 CMD ["start"]
 
 EXPOSE 10514
+EXPOSE 10514/udp
